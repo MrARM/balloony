@@ -1,0 +1,8 @@
+# Binaries for the current OS and architecture
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Env files
+.env

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"time"
 )
@@ -29,9 +30,16 @@ type DiscordEmbed struct {
 	Image       *EmbedImage    `json:"image,omitempty"`
 }
 
+type DiscordAttachement struct {
+	ID          string `json:"id,omitempty"`
+	Filename    string `json:"filename,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
 type DiscordMessage struct {
-	Content string         `json:"content,omitempty"`
-	Embeds  []DiscordEmbed `json:"embeds,omitempty"`
+	Content     string               `json:"content,omitempty"`
+	Embeds      []DiscordEmbed       `json:"embeds,omitempty"`
+	Attachments []DiscordAttachement `json:"attachments,omitempty"`
 }
 
 type DiscordWebhookResponse struct {
@@ -111,6 +119,92 @@ func SendDiscordWebhook(msg DiscordMessage, webhookURL string, edit bool) (Disco
 		return respObj, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return respObj, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return respObj, fmt.Errorf("discord webhook returned status: %s", resp.Status)
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&respObj); err != nil {
+		return respObj, fmt.Errorf("failed to decode DiscordWebhookResponse: %w", err)
+	}
+	return respObj, nil
+}
+
+func SendUpdatedWebhookWithImage(webhookURL string, embed *DiscordEmbed, imageBuf *bytes.Buffer) (DiscordWebhookResponse, error) {
+	// Implant the image into the embed
+	imageName := fmt.Sprintf("map_%d.png", time.Now().Unix())
+	embedImg := EmbedImage{
+		URL: fmt.Sprintf("attachment://%s", imageName),
+	}
+
+	embed.Image = &embedImg
+
+	// We make a new attachment set to clear any previous attachments
+	attachments := []DiscordAttachement{
+		{
+			ID:          "0",
+			Filename:    imageName,
+			Description: "Map image",
+		},
+	}
+
+	// Wrap up the JSON payload
+	payload := DiscordMessage{
+		Embeds:      []DiscordEmbed{*embed},
+		Attachments: attachments,
+	}
+
+	// Create a multipart request
+	var respObj DiscordWebhookResponse
+
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+
+	// Add payload_json part
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return respObj, fmt.Errorf("failed to marshal payload: %w", err)
+	}
+	if fw, err := w.CreateFormField("payload_json"); err != nil {
+		return respObj, fmt.Errorf("failed to create payload_json field: %w", err)
+	} else {
+		if _, err := fw.Write(payloadBytes); err != nil {
+			return respObj, fmt.Errorf("failed to write payload_json: %w", err)
+		}
+	}
+
+	// Add files[0] part
+	if fw, err := w.CreateFormFile("files[0]", imageName); err != nil {
+		return respObj, fmt.Errorf("failed to create files[0] field: %w", err)
+	} else {
+		if _, err := fw.Write(imageBuf.Bytes()); err != nil {
+			return respObj, fmt.Errorf("failed to write image data: %w", err)
+		}
+	}
+
+	if err := w.Close(); err != nil {
+		return respObj, fmt.Errorf("failed to close multipart writer: %w", err)
+	}
+
+	url := webhookURL
+	if len(url) > 0 && (url[len(url)-1] == '?' || url[len(url)-1] == '&') {
+		url += "wait=true"
+	} else if len(url) > 0 && (contains(url, "?")) {
+		url += "&wait=true"
+	} else {
+		url += "?wait=true"
+	}
+
+	req, err := http.NewRequest("PATCH", url, &b)
+	if err != nil {
+		return respObj, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", w.FormDataContentType())
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {

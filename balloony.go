@@ -19,7 +19,7 @@ import (
 
 // Development hard-coded bypass to the location filtering
 // Warning: This could get messy if ran during normal launch hours
-const bypassLocationFilter = true
+const bypassLocationFilter = false
 
 // Variables we keep in-memory
 var boundaryPts [][]float64
@@ -122,6 +122,15 @@ func handleSonde(pkt SHPacket, session *SondeSession) {
 		return
 	}
 
+	// Render the map image to memory for Discord upload
+	hasImage := false
+	buf, err := RenderSondeMapToBuffer(pkt, shPred)
+	if err != nil {
+		fmt.Println("Error rendering map image:", err)
+	} else {
+		hasImage = true
+	}
+
 	predLoc, err := RadarReverseGeocode(shPred.Latitude, shPred.Longitude)
 	if err != nil {
 		fmt.Println("Error reverse geocoding prediction:", err)
@@ -213,15 +222,19 @@ func handleSonde(pkt SHPacket, session *SondeSession) {
 		Fields:      fields,
 	}
 
-	// Since we are updating an existing message, we don't need to send a content field
-	message := DiscordMessage{
-		Embeds: []DiscordEmbed{embed},
-	}
+	if hasImage {
+		SendUpdatedWebhookWithImage(session.Webhook, &embed, buf)
+	} else {
+		// Since we are updating an existing message, we don't need to send a content field
+		message := DiscordMessage{
+			Embeds: []DiscordEmbed{embed},
+		}
 
-	_, derr := SendDiscordWebhook(message, session.Webhook, true)
-	if derr != nil {
-		fmt.Println("Error sending Discord message:", derr)
-		return
+		_, derr := SendDiscordWebhook(message, session.Webhook, true)
+		if derr != nil {
+			fmt.Println("Error sending Discord message:", derr)
+			return
+		}
 	}
 
 	// Update the time in the session
@@ -332,11 +345,6 @@ func handleNewSonde(pkt SHPacket) {
 func main() {
 	// Check for required environment variables
 	err := dotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-		panic(err)
-	}
-
 	requiredVars := []string{"RADAR_API_KEY", "ALERT_BOUNDS", "DISCORD_WEBHOOK_URL", "UPDATE_INTERVAL"}
 	for _, v := range requiredVars {
 		if os.Getenv(v) == "" {

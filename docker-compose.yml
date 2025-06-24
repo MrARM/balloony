@@ -1,0 +1,22 @@
+version: '3.8'
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - balloony-net
+
+  app:
+    build: .
+    depends_on:
+      - redis
+    env_file:
+      - .env
+    environment:
+      REDIS_ADDR: redis:6379
+    networks:
+      - balloony-net
+
+networks:
+  balloony-net:
+    driver: bridge

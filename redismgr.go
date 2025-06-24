@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -74,4 +75,20 @@ func (mgr *RedisMgr) SaveSondeSession(serial string, session *SondeSession) erro
 func (mgr *RedisMgr) Ping() error {
 	ctx := context.Background()
 	return mgr.Client.Ping(ctx).Err()
+}
+
+// GetRaw retrieves raw bytes from Redis for a given key.
+func (mgr *RedisMgr) GetRaw(ctx context.Context, key string) ([]byte, error) {
+	data, err := mgr.Client.Get(ctx, key).Bytes()
+	if err == redis.Nil {
+		return nil, nil // Key does not exist
+	} else if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// SetRaw sets raw bytes in Redis for a given key with a TTL of 24 hours.
+func (mgr *RedisMgr) SetRaw(ctx context.Context, key string, value []byte) error {
+	return mgr.Client.Set(ctx, key, value, 24*time.Hour).Err()
 }

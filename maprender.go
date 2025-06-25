@@ -52,7 +52,7 @@ func RenderSondeMap(pkt SHPacket, shPred *SHPredictionResult) (string, error) {
 		addBalloonFallback(m, pkt, balloonImg)
 	}
 
-	m.OverrideAttribution(fmt.Sprintf("Balloony - Tracking %s %s on %s - Thanks to OpenStreetMap contributors and Sondehub!", pkt.Type, pkt.Serial, pkt.Datetime.Format("01/02/2006")))
+	m.OverrideAttribution(fmt.Sprintf("Balloony - Tracking %s %s on %s - Thanks to OpenStreetMap contributors and SondeHub!", pkt.Type, pkt.Serial, pkt.Datetime.Format("01/02/2006")))
 
 	// Ensure render_debug directory exists
 	outputDir := "render_debug"
@@ -106,7 +106,7 @@ func RenderSondeMapToBuffer(pkt SHPacket, shPred *SHPredictionResult) (*bytes.Bu
 		addBalloonFallback(m, pkt, balloonImg)
 	}
 
-	m.OverrideAttribution(fmt.Sprintf("Balloony - Tracking %s %s on %s - Thanks to OpenStreetMap contributors and Sondehub!", pkt.Type, pkt.Serial, pkt.Datetime.Format("01/02/2006")))
+	m.OverrideAttribution(fmt.Sprintf("Balloony - Tracking %s %s on %s (UTC) - Thanks to OpenStreetMap contributors and SondeHub!", pkt.Type, pkt.Serial, pkt.Datetime.Format("01/02/2006 15:04:05")))
 
 	img, err := m.Render()
 	if err != nil {

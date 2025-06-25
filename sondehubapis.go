@@ -21,7 +21,7 @@ type SHPredictionResult struct {
 	Data          string    `json:"data"`
 }
 
-// GetPrediction fetches the first SHPredictionResult for a given serial from Sondehub API.
+// GetPrediction fetches the first SHPredictionResult for a given serial from SondeHub API.
 func GetPrediction(serial string) (*SHPredictionResult, error) {
 	url := fmt.Sprintf("https://api.v2.sondehub.org/predictions?vehicles=%s", serial)
 	resp, err := http.Get(url)
@@ -59,7 +59,7 @@ func GetPrediction(serial string) (*SHPredictionResult, error) {
 	return pred, nil
 }
 
-// GetReceivers fetches receiver locations from Sondehub and returns a []Point (lat/lon/name)
+// GetReceivers fetches receiver locations from SondeHub and returns a []Point (lat/lon/name)
 func GetReceivers() ([]Point, error) {
 	resp, err := http.Get("https://api.v2.sondehub.org/listeners/telemetry")
 	if err != nil {

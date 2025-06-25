@@ -55,7 +55,7 @@ func startReceiversUpdater() {
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	// Parse the message payload into a Sondehub packet
+	// Parse the message payload into a SondeHub packet
 	pkts, err := ParseBatch(msg.Payload())
 	if err != nil {
 		fmt.Println("Error parsing packets:", err)
@@ -168,6 +168,7 @@ func handleSonde(pkt SHPacket, session *SondeSession) {
 		fmt.Println("Error loading timezone:", err)
 		loc = time.UTC
 	}
+
 	localPredTime := shPred.Time.In(loc)
 	fields = append(fields, DiscordField{
 		Name:  fmt.Sprintf("Predicted to land in %s around %s", GetLocationFromRadarResponse(predLoc), localPredTime.Format("3:04 PM")),
@@ -365,6 +366,15 @@ func main() {
 		timezone = tz
 	}
 
+	// Check to see if we have custom messages defined
+	if msg := os.Getenv("MESSAGE_USUAL"); msg != "" {
+		message_usual = msg
+	}
+
+	if msg := os.Getenv("MESSAGE_UNUSUAL"); msg != "" {
+		message_unusual = msg
+	}
+
 	// Load the update interval
 	updateIntervalStr := os.Getenv("UPDATE_INTERVAL")
 	updateInterval, err = strconv.ParseInt(updateIntervalStr, 10, 64)
@@ -386,7 +396,7 @@ func main() {
 
 	mqttclient := MQTTConnection(broker, port, "balloonyv2", messagePubHandler)
 	if token := mqttclient.Connect(); token.Wait() && token.Error() != nil {
-		fmt.Println("Error connecting to Sondehub", token.Error())
+		fmt.Println("Error connecting to SondeHub", token.Error())
 		panic(token.Error())
 	}
 

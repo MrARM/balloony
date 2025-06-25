@@ -52,8 +52,8 @@ A Discord Webhook-based bot that provides real-time alerts and updates for Radio
 1. **Clone the repository**
 
    ```sh
-   git clone https://github.com/mrarm/balloonwatch.git
-   cd balloonwatch
+   git clone https://github.com/mrarm/balloony.git
+   cd balloony
    ```
 
 2. **Prepare Environment Variables**

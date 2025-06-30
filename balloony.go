@@ -106,7 +106,17 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 func handleSonde(pkt SHPacket, session *SondeSession) {
 	// Check to see if the session time has been long enough
 	if pkt.TimeReceived.Unix() < session.Time+updateInterval {
-		return
+		// Conditionally, if the sonde is descending and less than 10kft,
+		// our update interval changes to 30 seconds
+		if pkt.Alt < 3048 && pkt.VelV < 0 { // 10,000 feet in meters
+			if pkt.TimeReceived.Unix() < session.Time+30 {
+				// If the packet is less than 30 seconds old, we don't update
+				return
+			}
+		} else {
+			// High Altitude + not passed interval
+			return
+		}
 	}
 
 	// Pull Geo APIs for reverse geocoding

@@ -19,7 +19,7 @@ import (
 
 // Development hard-coded bypass to the location filtering
 // Warning: This could get messy if ran during normal launch hours
-const bypassLocationFilter = true
+var bypassLocationFilter = false
 
 // Variables we keep in-memory
 var boundaryPts [][]float64
@@ -398,6 +398,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading launch sites: %v", err)
 		panic(fmt.Sprintf("Error loading launch sites: %v", err))
+	}
+
+	// Check for bypassLocationFilter environment variable
+	if bypassEnv := os.Getenv("BYPASS_LOCATION_FILTER"); bypassEnv != "" {
+		if bypassEnv == "true" || bypassEnv == "1" {
+			bypassLocationFilter = true
+			fmt.Println("Bypass location filter is enabled. All sondes will be processed regardless of location.")
+		} else {
+			bypassLocationFilter = false
+		}
 	}
 
 	// Connect to sondehub MQTT broker

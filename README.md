@@ -21,6 +21,7 @@ A Discord Webhook-based bot that provides real-time alerts and updates for Radio
 |----------------------------|:--------:|-------------------------------------------------------------------------------------------------------------|
 | `RADAR_API_KEY`            |   Yes    | API key for Radar.com reverse geocoding. [See below](#radarcom-api-key)                                     |
 | `ALERT_BOUNDS`             |   Yes    | JSON array of boundary points (see [Alert Boundaries Format](#alert-boundaries-format))                     |
+| `BYPASS_LOCATION_FILTER`   |   No     | Bypass alert boundary checks (for testing/debugging during off-hours). Must be set to "true" or "1"         |
 | `DISCORD_WEBHOOK_URL`      |   Yes    | Discord webhook URL for sending alerts                                                                      |
 | `UPDATE_INTERVAL`          |   Yes    | Interval (in seconds) between updates for each sonde                                                        |
 | `TIMEZONE`                 |    No    | Timezone for displaying times (default: `Etc/UTC`)                                                          |

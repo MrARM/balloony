@@ -17,19 +17,20 @@ A Discord Webhook-based bot that provides real-time alerts and updates for Radio
 
 ## Environment Variables
 
-| Name                  | Required | Description                                                                                  |
-|-----------------------|----------|----------------------------------------------------------------------------------------------|
-| `RADAR_API_KEY`       | Yes      | API key for Radar.com reverse geocoding. [See below](#radarcom-api-key)                      |
-| `ALERT_BOUNDS`        | Yes      | JSON array of boundary points (see [Alert Boundaries Format](#alert-boundaries-format))      |
-| `DISCORD_WEBHOOK_URL` | Yes      | Discord webhook URL for sending alerts                                                       |
-| `UPDATE_INTERVAL`     | Yes      | Interval (in seconds) between updates for each sonde                                         |
-| `TIMEZONE`            | No       | Timezone for displaying times (default: `Etc/UTC`)                                           |
-| `MESSAGE_USUAL`       | No       | Custom message for usual launches (default: "A new sonde has been detected!")                |
-| `MESSAGE_UNUSUAL`     | No       | Custom message for unusual launches (default: "Unusual Sonde Detected!")                     |
-| `TILE_CACHE_DIR`      | No       | Location to store OSM tiles. Defaults to ./tilecache                                         |
-| `REDIS_ADDR`          | No       | Redis server address (default: "localhost:6379" )                                            |
-| `REDIS_DB`            | No       | Redis database index if required, defaults to 0.                                             |
-| `REDIS_PASSWORD`      | No       | Redis password if required. Blank by default.                                                |
+| Name                       | Required | Description                                                                                                 |
+|----------------------------|:--------:|-------------------------------------------------------------------------------------------------------------|
+| `RADAR_API_KEY`            |   Yes    | API key for Radar.com reverse geocoding. [See below](#radarcom-api-key)                                     |
+| `ALERT_BOUNDS`             |   Yes    | JSON array of boundary points (see [Alert Boundaries Format](#alert-boundaries-format))                     |
+| `DISCORD_WEBHOOK_URL`      |   Yes    | Discord webhook URL for sending alerts                                                                      |
+| `UPDATE_INTERVAL`          |   Yes    | Interval (in seconds) between updates for each sonde                                                        |
+| `TIMEZONE`                 |    No    | Timezone for displaying times (default: `Etc/UTC`)                                                          |
+| `MESSAGE_USUAL`            |    No    | Custom message for usual launches (default: "A new sonde has been detected!")                               |
+| `MESSAGE_UNUSUAL`          |    No    | Custom message for unusual launches (default: "Unusual Sonde Detected!")                                    |
+| `TILE_CACHE_DIR`           |    No    | Location to store OSM tiles. Defaults to `./tilecache`                                                      |
+| `MAP_SATELLITE_ALTITUDE_FT`|    No    | Threshold to switch to ArcGIS satellite maps for landing location (ft). Default: 10,000 ft.                 |
+| `REDIS_ADDR`               |    No    | Redis server address (default: `localhost:6379`)                                                            |
+| `REDIS_DB`                 |    No    | Redis database index if required, defaults to 0.                                                            |
+| `REDIS_PASSWORD`           |    No    | Redis password if required. Blank by default.                                                               |
 
 ---
 

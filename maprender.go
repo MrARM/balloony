@@ -21,8 +21,25 @@ import (
 func RenderSondeMap(pkt SHPacket, shPred *SHPredictionResult) (string, error) {
 	m := staticmaps.NewContext()
 	m.SetSize(1280, 720)
-	m.SetTileProvider(staticmaps.NewTileProviderOpenStreetMaps())
 	m.SetMaxZoom(19) // Fixes Issue #8 - Map does not draw tiles at low altitudes
+
+	// Check altitude and determine if we show satellite imagery or standard map
+	altft := int(pkt.Alt * 3.28084) // Convert meters to feet
+	ftenv := os.Getenv("MAP_SATELLITE_ALTITUDE_FT")
+	mapSatelliteAltitudeFt := 10000 // Default to 10,000 feet if not set
+	if ftenv != "" {
+		if parsed, err := strconv.Atoi(ftenv); err == nil {
+			mapSatelliteAltitudeFt = parsed
+		}
+	}
+
+	// This may need to be ajusted later, but I think allowing a 0.2m/s velocity threshold will catch tree landers or other sondes that continue to ping
+	if altft < mapSatelliteAltitudeFt && pkt.VelV <= 0.2 {
+		// Use satellite imagery for low altitudes
+		m.SetTileProvider(staticmaps.NewTileProviderArcgisWorldImagery())
+	} else {
+		m.SetTileProvider(staticmaps.NewTileProviderOpenStreetMaps())
+	}
 
 	// Determine cache directory from env or default
 	cacheDir := os.Getenv("TILE_CACHE_DIR")
@@ -82,7 +99,25 @@ func RenderSondeMap(pkt SHPacket, shPred *SHPredictionResult) (string, error) {
 func RenderSondeMapToBuffer(pkt SHPacket, shPred *SHPredictionResult) (*bytes.Buffer, error) {
 	m := staticmaps.NewContext()
 	m.SetSize(1280, 720)
-	m.SetTileProvider(staticmaps.NewTileProviderOpenStreetMaps())
+	m.SetMaxZoom(19) // Fixes Issue #8 - Map does not draw tiles at low altitudes
+
+	// Check altitude and determine if we show satellite imagery or standard map
+	altft := int(pkt.Alt * 3.28084) // Convert meters to feet
+	ftenv := os.Getenv("MAP_SATELLITE_ALTITUDE_FT")
+	mapSatelliteAltitudeFt := 10000 // Default to 10,000 feet if not set
+	if ftenv != "" {
+		if parsed, err := strconv.Atoi(ftenv); err == nil {
+			mapSatelliteAltitudeFt = parsed
+		}
+	}
+
+	// This may need to be ajusted later, but I think allowing a 0.2m/s velocity threshold will catch tree landers or other sondes that continue to ping
+	if altft < mapSatelliteAltitudeFt && pkt.VelV <= 0.2 {
+		// Use satellite imagery for low altitudes
+		m.SetTileProvider(staticmaps.NewTileProviderArcgisWorldImagery())
+	} else {
+		m.SetTileProvider(staticmaps.NewTileProviderOpenStreetMaps())
+	}
 
 	cacheDir := os.Getenv("TILE_CACHE_DIR")
 	if cacheDir == "" {

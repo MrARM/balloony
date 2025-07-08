@@ -19,7 +19,7 @@ import (
 
 // Development hard-coded bypass to the location filtering
 // Warning: This could get messy if ran during normal launch hours
-const bypassLocationFilter = false
+const bypassLocationFilter = true
 
 // Variables we keep in-memory
 var boundaryPts [][]float64

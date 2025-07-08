@@ -22,6 +22,7 @@ func RenderSondeMap(pkt SHPacket, shPred *SHPredictionResult) (string, error) {
 	m := staticmaps.NewContext()
 	m.SetSize(1280, 720)
 	m.SetTileProvider(staticmaps.NewTileProviderOpenStreetMaps())
+	m.SetMaxZoom(19) // Fixes Issue #8 - Map does not draw tiles at low altitudes
 
 	// Determine cache directory from env or default
 	cacheDir := os.Getenv("TILE_CACHE_DIR")
@@ -197,9 +198,4 @@ func loadPNGAsImage(path string) (image.Image, error) {
 		return nil, err
 	}
 	return img, nil
-}
-
-// getTileKey returns the Redis key for a tile
-func getTileKey(z, x, y int) string {
-	return fmt.Sprintf("osm_tile_%d_%d_%d", z, x, y)
 }

@@ -84,12 +84,32 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 		if !claimSonde(pkt.Serial) {
 			continue
 		}
+
 		// Then check to see if we have a new sonde or an existing sonde
 		session, err := redisclient.GetSondeSession(pkt.Serial)
 		if err != nil {
 			fmt.Println("Error getting SondeSession from Redis:", err)
 			releaseSonde(pkt.Serial)
 			return
+		}
+
+		// iMet sonde VelV spoofing
+		if pkt.Manufacturer == "Intermet Systems" {
+			if session != nil {
+				fmt.Println("Existing iMetAlt:", session.IMetAlt)
+				// If IMetAlt is set(we use omitempty)
+				if session.IMetAlt != 0 {
+					if pkt.Alt < float64(session.IMetAlt) {
+						// if the altitude has dropped, set the VelV to -1
+						pkt.VelV = -1
+					} else {
+						// If the altitude is higher than the IMetAlt, we set it to 1
+						pkt.VelV = 1
+					}
+				}
+				// set the IMetAlt to the current altitude
+				session.IMetAlt = int(pkt.Alt)
+			}
 		}
 
 		if session == nil {

@@ -14,6 +14,7 @@ type SondeSession struct {
 	Time     int64  `json:"time"`
 	Webhook  string `json:"webhook"`
 	FromText string `json:"fromText"`
+	IMetAlt  int    `json:"iMetAlt,omitempty"` // Altitude in meters
 }
 
 // NewRedisClient creates a RedisMgr using environment variables, defaults to localhost:6379 if not set.

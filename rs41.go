@@ -7,6 +7,13 @@ import (
 
 // RS41DateCodeTable maps the first letter of the serial to the manufacturing year.
 var RS41DateCodeTable = map[byte]int{
+	'A': 2028,
+	'B': 2029,
+	'C': 2030,
+	'D': 2031,
+	'E': 2032,
+	'F': 2033,
+	'G': 2034,
 	'J': 2013,
 	'K': 2014,
 	'L': 2015,

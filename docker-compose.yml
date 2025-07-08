@@ -13,6 +13,8 @@ services:
       - redis
     env_file:
       - .env
+    volumes:
+      - ./tilecache:/app/tilecache
     environment:
       REDIS_ADDR: redis:6379
     networks:

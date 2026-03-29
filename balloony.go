@@ -32,6 +32,7 @@ var message_unusual = "Unusual Sonde Detected!"
 
 var receivers []Point
 var receiversMutex sync.RWMutex
+var seenSerials = newSerialTracker()
 
 const defaultReceiversUpdateInterval = 12 * 60 * 60 // 12 hours in seconds
 const zeroWidthSpace = "\u200B"
@@ -64,6 +65,8 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 
 	// In most situations, we only get 1 packet, but we still handle it with a foreach in the situation where we have a multi-sdr receiver
 	for _, pkt := range pkts {
+		wasSeen := seenSerials.wasSeenRecently(pkt.Serial)
+		seenSerials.markSeen(pkt.Serial, pkt.TimeReceived)
 		// TEST: Test the nearest point functionality
 		// closest, dist, err := FindClosestPoint(pkt.Lat, pkt.Lon, launchSites)
 		// if err != nil {
@@ -75,9 +78,9 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 		// This is the main processing loop for incoming sondehub packets
 		// Check to see if the sonde is inside of our area of interest
 		if !InsidePoly([]float64{pkt.Lon, pkt.Lat}, boundaryPts) {
-			// Skip packets that are outside the defined boundary
-			if !bypassLocationFilter {
-				return
+			// Skip packets outside the boundary unless we have seen this serial recently.
+			if !bypassLocationFilter && !wasSeen {
+				continue
 			}
 		}
 
@@ -447,8 +450,9 @@ func main() {
 		panic(err)
 	}
 
-	// Start the receivers updater goroutine
+	// Start periodic background workers
 	startReceiversUpdater()
+	startStaleSeenSerialsCleanup(seenSerials)
 
 	// Wait for Ctrl+C (SIGINT) to exit
 	c := make(chan os.Signal, 1)

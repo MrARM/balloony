@@ -124,12 +124,14 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 }
 
 func handleSonde(pkt SHPacket, session *SondeSession) {
+	// Originally we used packet times but I have found that some stations and TTGO receivers do not provide accurate timestamps.
+	now := time.Now().UTC().Unix()
 	// Check to see if the session time has been long enough
-	if pkt.TimeReceived.Unix() < session.Time+updateInterval {
+	if now < session.Time+updateInterval {
 		// Conditionally, if the sonde is descending and less than 10kft,
 		// our update interval changes to 30 seconds
 		if pkt.Alt < 3048 && pkt.VelV < 0 { // 10,000 feet in meters
-			if pkt.TimeReceived.Unix() < session.Time+30 {
+			if now < session.Time+30 {
 				// If the packet is less than 30 seconds old, we don't update
 				return
 			}
@@ -279,10 +281,13 @@ func handleSonde(pkt SHPacket, session *SondeSession) {
 }
 
 func handleNewSonde(pkt SHPacket) {
+	// Fix for receivers with inaccurate time
+	now := time.Now().UTC()
+	nowu := now.Unix()
 	// This function handles new sondes that are detected
-	fmt.Printf("New sonde detected: %s at %s\n", pkt.Serial, pkt.TimeReceived) // placeholder
+	fmt.Printf("New sonde detected: %s at %s\n", pkt.Serial, now) // placeholder
 	session := &SondeSession{
-		Time:     pkt.TimeReceived.Unix(),
+		Time:     nowu,
 		Webhook:  os.Getenv("DISCORD_WEBHOOK_URL"),
 		FromText: "",
 	}
@@ -328,12 +333,12 @@ func handleNewSonde(pkt SHPacket) {
 	})
 
 	fields = append(fields, DiscordField{
-		Name:  fmt.Sprintf("Prediction available in <t:%d:R>", pkt.TimeReceived.Unix()+updateInterval),
+		Name:  fmt.Sprintf("Prediction available in <t:%d:R>", nowu+updateInterval),
 		Value: zeroWidthSpace,
 	})
 
 	// Generate the strings that are conditional
-	usualTime := IsUsualTime(pkt.TimeReceived)
+	usualTime := IsUsualTime(now)
 	var messageContent *string
 	embedTitle := fmt.Sprintf("%s %s is airborne %s", defaultString(pkt.Subtype, pkt.Type), pkt.Serial, session.FromText)
 	if usualTime {

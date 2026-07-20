@@ -38,7 +38,16 @@ func RenderSondeMap(pkt SHPacket, shPred *SHPredictionResult) (string, error) {
 		// Use satellite imagery for low altitudes
 		m.SetTileProvider(staticmaps.NewTileProviderArcgisWorldImagery())
 	} else {
-		m.SetTileProvider(staticmaps.NewTileProviderOpenStreetMaps())
+		featureFlagsMu.RLock()
+		tfEnabled := featureFlags.ThunderforestEnabled
+		tfStyle := featureFlags.ThunderforestStyle
+		tfAPIKey := featureFlags.ThunderforestAPIKey
+		featureFlagsMu.RUnlock()
+		if tfEnabled && tfAPIKey != "" {
+			m.SetTileProvider(newThunderforestTileProvider(tfStyle, tfAPIKey))
+		} else {
+			m.SetTileProvider(staticmaps.NewTileProviderOpenStreetMaps())
+		}
 	}
 
 	// Determine cache directory from env or default
@@ -116,7 +125,16 @@ func RenderSondeMapToBuffer(pkt SHPacket, shPred *SHPredictionResult) (*bytes.Bu
 		// Use satellite imagery for low altitudes
 		m.SetTileProvider(staticmaps.NewTileProviderArcgisWorldImagery())
 	} else {
-		m.SetTileProvider(staticmaps.NewTileProviderOpenStreetMaps())
+		featureFlagsMu.RLock()
+		tfEnabled := featureFlags.ThunderforestEnabled
+		tfStyle := featureFlags.ThunderforestStyle
+		tfAPIKey := featureFlags.ThunderforestAPIKey
+		featureFlagsMu.RUnlock()
+		if tfEnabled && tfAPIKey != "" {
+			m.SetTileProvider(newThunderforestTileProvider(tfStyle, tfAPIKey))
+		} else {
+			m.SetTileProvider(staticmaps.NewTileProviderOpenStreetMaps())
+		}
 	}
 
 	cacheDir := os.Getenv("TILE_CACHE_DIR")
@@ -219,6 +237,18 @@ func addBalloonFallback(m *staticmaps.Context, pkt SHPacket, balloonImg image.Im
 			Size:     16,
 		})
 	}
+}
+
+// newThunderforestTileProvider creates a TileProvider for a Thunderforest map style.
+func newThunderforestTileProvider(style, apiKey string) *staticmaps.TileProvider {
+	t := new(staticmaps.TileProvider)
+	t.Name = "thunderforest-" + style
+	t.Attribution = "Maps © Thunderforest; Data © OSM and contributors, ODbL"
+	t.TileSize = 256
+	t.APIKey = apiKey
+	t.URLPattern = "https://%[1]s.tile.thunderforest.com/" + style + "/%[2]d/%[3]d/%[4]d.png?apikey=%[5]s"
+	t.Shards = []string{"a", "b", "c"}
+	return t
 }
 
 // loadPNGAsImage loads a PNG file as image.Image

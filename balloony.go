@@ -33,8 +33,31 @@ var message_unusual = "Unusual Sonde Detected!"
 var receivers []Point
 var receiversMutex sync.RWMutex
 
+// recentlySeen tracks serials that have been seen inside the detection area,
+// so balloons that drift out can continue to be tracked.
+var recentlySeen = make(map[string]time.Time)
+var recentlySeenMu sync.RWMutex
+
 const defaultReceiversUpdateInterval = 12 * 60 * 60 // 12 hours in seconds
 const zeroWidthSpace = "\u200B"
+
+// startStaleCleanup removes serials from recentlySeen that haven't been heard
+// from in over an hour. Runs once per hour in the background.
+func startStaleCleanup() {
+	go func() {
+		for {
+			time.Sleep(time.Hour)
+			cutoff := time.Now().Add(-time.Hour)
+			recentlySeenMu.Lock()
+			for serial, ts := range recentlySeen {
+				if ts.Before(cutoff) {
+					delete(recentlySeen, serial)
+				}
+			}
+			recentlySeenMu.Unlock()
+		}
+	}()
+}
 
 // Routine to periodically update the receivers list every 12 hours
 func startReceiversUpdater() {
@@ -73,13 +96,23 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 		// fmt.Printf("Closest launch site to %s is %s at distance %.2f miles\n", pkt.Serial, closest.Name, dist)
 
 		// This is the main processing loop for incoming sondehub packets
-		// Check to see if the sonde is inside of our area of interest
-		if !InsidePoly([]float64{pkt.Lon, pkt.Lat}, boundaryPts) {
-			// Skip packets that are outside the defined boundary
+		// Check to see if the sonde is inside of our area of interest,
+		// or if we have already seen it inside the area (so we keep tracking
+		// balloons that drift out of the boundary).
+		recentlySeenMu.RLock()
+		_, known := recentlySeen[pkt.Serial]
+		recentlySeenMu.RUnlock()
+
+		if !InsidePoly([]float64{pkt.Lon, pkt.Lat}, boundaryPts) && !known {
 			if !bypassLocationFilter {
-				return
+				continue
 			}
 		}
+
+		// Stamp this serial as recently seen so we keep tracking it if it drifts out.
+		recentlySeenMu.Lock()
+		recentlySeen[pkt.Serial] = time.Now()
+		recentlySeenMu.Unlock()
 
 		if !claimSonde(pkt.Serial) {
 			continue
@@ -454,6 +487,15 @@ func main() {
 
 	// Start the receivers updater goroutine
 	startReceiversUpdater()
+
+	// Start the stale recently-seen cleanup goroutine
+	startStaleCleanup()
+
+	// Start the inbound sonde scanner (checks for approaching sondes every 15 minutes)
+	startInboundScanner()
+
+	// Start the web UI for feature flags
+	startWebUI()
 
 	// Wait for Ctrl+C (SIGINT) to exit
 	c := make(chan os.Signal, 1)

@@ -19,6 +19,8 @@ services:
       REDIS_ADDR: redis:6379
     networks:
       - balloony-net
+    ports:
+      - "18880:8080"
 
 networks:
   balloony-net:

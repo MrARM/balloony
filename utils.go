@@ -18,6 +18,30 @@ type Point struct {
 	Name string  `json:"name"`
 }
 
+// polyCentroid returns the centroid [lon, lat] of a polygon's vertices.
+func polyCentroid(pts [][]float64) (float64, float64) {
+	var sumLon, sumLat float64
+	for _, p := range pts {
+		sumLon += p[0]
+		sumLat += p[1]
+	}
+	n := float64(len(pts))
+	return sumLon / n, sumLat / n
+}
+
+// polyMaxRadius returns the maximum haversine distance in miles from (cLon, cLat)
+// to any vertex of the polygon.
+func polyMaxRadius(pts [][]float64, cLon, cLat float64) float64 {
+	var max float64
+	for _, p := range pts {
+		d := haversineMiles(cLat, cLon, p[1], p[0])
+		if d > max {
+			max = d
+		}
+	}
+	return max
+}
+
 // InsidePoly returns true if the point is inside the polygon defined by vs (ray-casting algorithm)
 func InsidePoly(point []float64, vs [][]float64) bool {
 	x, y := point[0], point[1]
